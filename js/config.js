@@ -41,8 +41,8 @@ export const CONFIG = {
         
         // 3D Spatial Audio Settings (PannerNode)
         spatialEnabled: true,
-        pannerRefDistance: 5,
-        pannerMaxDistance: 30,
+        pannerRefDistance: 20,     // Increased to prevent volume drop-off at beam radius
+        pannerMaxDistance: 100,
         
         // Main Effects Chain
         delayTime: 0.35,

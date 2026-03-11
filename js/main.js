@@ -89,8 +89,8 @@ class SynthHelix {
     
     // Input mechanisms
     document.addEventListener('mousemove', (e) => this._onMouseMove(e));
-    document.addEventListener('mousedown', () => this._onMouseDown());
-    document.addEventListener('mouseup', () => this._onMouseUp());
+    document.addEventListener('mousedown', (e) => this._onMouseDown(e));
+    document.addEventListener('mouseup', (e) => this._onMouseUp(e));
     document.addEventListener('keydown', (e) => { if(e.key === 'Shift') this.shiftPressed = true; });
     document.addEventListener('keyup', (e) => { if(e.key === 'Shift') this.shiftPressed = false; });
     
@@ -127,6 +127,8 @@ class SynthHelix {
     
     // Initialize audio
     this.synth = new Synth();
+    this.synth.resume(); // Ensure Audio Context wakes up upon User Interaction
+    
     this.effects = new AudioEffects(this.synth.ctx);
     this.arpeggiator = new Arpeggiator(this.synth);
     this.midiController = new MIDIController(this.synth);
@@ -230,6 +232,14 @@ class SynthHelix {
    * @private
    */
   _onMouseMove(event) {
+    // Ignore hovering over UI elements
+    if (event && event.target) {
+        if (event.target.closest('#main-hud, #controls-panel, #start-btn, #interaction-hint, #looper-hud, #boot-screen')) {
+            this.lastHoveredIndex = -1; // Reset hover
+            return;
+        }
+    }
+    
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     
@@ -241,8 +251,14 @@ class SynthHelix {
    */
   _onTouchMove(event) {
     if (event.touches.length === 0) return;
-    
     const touch = event.touches[0];
+    
+    // Ignore touch on UI
+    if (touch.target && touch.target.closest('#main-hud, #controls-panel, #start-btn, #interaction-hint, #looper-hud')) {
+        this.lastHoveredIndex = -1;
+        return;
+    }
+    
     this.mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
     
@@ -254,8 +270,13 @@ class SynthHelix {
    */
   _onTouchStart(event) {
     if (event.touches.length === 0) return;
-    
     const touch = event.touches[0];
+    
+    // Ignore touch on UI
+    if (touch.target && touch.target.closest('#main-hud, #controls-panel, #start-btn, #interaction-hint, #looper-hud')) {
+        return;
+    }
+    
     this.mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
     
@@ -316,7 +337,14 @@ class SynthHelix {
   /**
    * Handle mouse down (bass drop)
    */
-  _onMouseDown() {
+  _onMouseDown(event) {
+    // Ignore clicks that target the UI overlay, so we don't accidentally "play music behind the settings"
+    if (event && event.target) {
+        if (event.target.closest('#main-hud, #controls-panel, #start-btn, #interaction-hint, #looper-hud, #boot-screen')) {
+            return;
+        }
+    }
+    
     this.isMouseDown = true;
     this.triggerBassVisuals();
     

@@ -20,6 +20,138 @@ export class Controls {
   _createPanel() {
     // Gunakan panel yang sudah ada di HTML5 (hindari innerHTML string panjang)
     this.panel = document.getElementById('controls-panel');
+    const panelBody = this.panel?.querySelector('.panel-body');
+
+    if (panelBody) {
+        panelBody.innerHTML = `
+          <!-- AUDIO SECTION -->
+          <div class="controls-section">
+            <h3>🎵 Audio</h3>
+            
+            <label>Volume</label>
+            <input type="range" id="ctrl-volume" min="0" max="100" value="30" class="cyber-range">
+            
+            <label>Scale</label>
+            <select id="ctrl-scale" class="cyber-select">
+              ${getScaleNames().map(s => 
+                `<option value="${s.id}" ${s.id === CONFIG.audio.defaultScale ? 'selected' : ''}>${s.name}</option>`
+              ).join('')}
+            </select>
+            
+            <label>Waveform</label>
+            <select id="ctrl-waveform" class="cyber-select">
+              <option value="sine">Sine (Smooth)</option>
+              <option value="triangle" selected>Triangle (Soft)</option>
+              <option value="sawtooth">Sawtooth (Bright)</option>
+              <option value="square">Square (Retro)</option>
+            </select>
+          </div>
+          
+          <!-- EFFECTS SECTION -->
+          <div class="controls-section">
+            <h3>🎛️ Effects</h3>
+            
+            <label>Delay Time</label>
+            <input type="range" id="ctrl-delay" min="0" max="100" value="30" class="cyber-range">
+            
+            <label>Reverb Mix</label>
+            <input type="range" id="ctrl-reverb" min="0" max="100" value="30" class="cyber-range">
+            
+            <label>Filter Cutoff</label>
+            <input type="range" id="ctrl-filter" min="0" max="100" value="100" class="cyber-range">
+            
+            <label>Filter Type</label>
+            <select id="ctrl-filter-type" class="cyber-select">
+              <option value="lowpass">Low Pass</option>
+              <option value="highpass">High Pass</option>
+              <option value="bandpass">Band Pass</option>
+            </select>
+            
+            <label>Distortion</label>
+            <input type="range" id="ctrl-distortion" min="0" max="100" value="0" class="cyber-range">
+            
+            <label>Chorus Mix</label>
+            <input type="range" id="ctrl-chorus" min="0" max="100" value="0" class="cyber-range">
+          </div>
+          
+          <!-- ARPEGGIATOR SECTION -->
+          <div class="controls-section">
+            <h3>🎼 Arpeggiator</h3>
+            
+            <button id="ctrl-arp-toggle" class="cyber-btn arp-btn">
+              <span class="arp-icon">▶</span> Start Arp
+            </button>
+            
+            <label>Pattern</label>
+            <select id="ctrl-arp-pattern" class="cyber-select">
+              <option value="up">Up ↑</option>
+              <option value="down">Down ↓</option>
+              <option value="updown">Up/Down ↕</option>
+              <option value="random">Random 🎲</option>
+              <option value="chord">Chord 🎹</option>
+            </select>
+            
+            <label>Tempo: <span id="arp-tempo-display">120</span> BPM</label>
+            <input type="range" id="ctrl-arp-tempo" min="60" max="200" value="120" class="cyber-range">
+            
+            <label>Chord Type</label>
+            <select id="ctrl-arp-chord" class="cyber-select">
+              <option value="major">Major</option>
+              <option value="minor">Minor</option>
+              <option value="major7">Major 7th</option>
+              <option value="minor7">Minor 7th</option>
+              <option value="sus4">Sus4</option>
+              <option value="power">Power</option>
+            </select>
+          </div>
+    
+          <!-- VISUALIZER SECTION -->
+          <div class="controls-section visualizer-section">
+            <h3>📊 Visualizer</h3>
+            <div id="visualizer-container">
+              <canvas id="waveform-canvas" width="280" height="60"></canvas>
+              <canvas id="frequency-canvas" width="280" height="60"></canvas>
+            </div>
+          </div>
+    
+          <!-- MIDI SECTION -->
+          <div class="controls-section">
+            <h3>🎹 MIDI</h3>
+            <button id="ctrl-midi-enable" class="cyber-btn midi-btn">
+              Enable MIDI
+            </button>
+            <div id="midi-status" class="midi-status">
+              Click to connect MIDI devices
+            </div>
+          </div>
+          
+          <!-- VISUAL SECTION -->
+          <div class="controls-section">
+            <h3>🎨 Visual</h3>
+            
+            <label>Visual Warp (Blackhole)</label>
+            <input type="range" id="warp-intensity" min="0" max="100" value="0" class="cyber-range">
+            
+            <label>Theme</label>
+            <select id="ctrl-theme" class="cyber-select">
+              ${Object.entries(CONFIG.themes).map(([key, theme]) => 
+                `<option value="${key}" ${key === CONFIG.defaultTheme ? 'selected' : ''}>${theme.name}</option>`
+              ).join('')}
+            </select>
+            
+            <label>Beam Count</label>
+            <select id="ctrl-beams" class="cyber-select">
+              <option value="16">16 Beams</option>
+              <option value="32" selected>32 Beams</option>
+              <option value="48">48 Beams</option>
+              <option value="64">64 Beams</option>
+            </select>
+            
+            <label>Bloom Intensity</label>
+            <input type="range" id="ctrl-bloom" min="0" max="100" value="66" class="cyber-range">
+          </div>
+        `;
+    }
     
     // Bind Event Listeners
     this._bindEvents();
@@ -37,9 +169,22 @@ export class Controls {
 
     // ============ AUDIO CONTROLS ============
     
-    // Scale Modulation
-    document.getElementById('scale-select')?.addEventListener('change', (e) => {
+    // Volume
+    document.getElementById('ctrl-volume')?.addEventListener('input', (e) => {
+      this.app.synth?.setVolume(e.target.value / 100);
+    });
+
+    // Scale
+    document.getElementById('ctrl-scale')?.addEventListener('change', (e) => {
       this.app.synth?.setScale(e.target.value);
+      if (this.app.arpeggiator) {
+        this.app.arpeggiator.setNotes(this.app.arpeggiator.notes);
+      }
+    });
+
+    // Waveform
+    document.getElementById('ctrl-waveform')?.addEventListener('change', (e) => {
+      this.app.synth?.setWaveform(e.target.value);
     });
 
     // ============ VISUAL CONTROLS ============
@@ -146,17 +291,17 @@ export class Controls {
     // ============ VISUAL CONTROLS ============
 
     // Theme
-    document.getElementById('ctrl-theme').addEventListener('change', (e) => {
+    document.getElementById('ctrl-theme')?.addEventListener('change', (e) => {
       this.app.setTheme(e.target.value);
     });
 
     // Beam count
-    document.getElementById('ctrl-beams').addEventListener('change', (e) => {
+    document.getElementById('ctrl-beams')?.addEventListener('change', (e) => {
       this.app.setBeamCount(parseInt(e.target.value));
     });
 
     // Bloom
-    document.getElementById('ctrl-bloom').addEventListener('input', (e) => {
+    document.getElementById('ctrl-bloom')?.addEventListener('input', (e) => {
       this.app.sceneManager?.setBloomStrength(e.target.value / 33);
     });
 
@@ -191,7 +336,10 @@ export class Controls {
           this.app.sceneManager?.toggleFullscreen();
           break;
         case 'r':
-          this.toggleRecording(document.getElementById('ctrl-record'));
+          {
+             const recBtn = document.getElementById('record-btn');
+             if (recBtn) recBtn.click();
+          }
           break;
         case 'm':
           this.toggleMute();
