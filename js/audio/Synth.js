@@ -107,6 +107,24 @@ export class Synth {
   }
 
   /**
+   * Zen Mode: Maximize Reverb, expand delay, reduce dry 
+   * @param {boolean} isActive
+   */
+  setZenMode(isActive) {
+    if(!this.ctx) return;
+    
+    if (isActive) {
+      this.reverbGain.gain.setTargetAtTime(0.85, this.ctx.currentTime, 0.5);
+      this.delayFeedback.gain.setTargetAtTime(0.7, this.ctx.currentTime, 0.5);
+      this.dryGain.gain.setTargetAtTime(0.3, this.ctx.currentTime, 0.5);
+    } else {
+      this.reverbGain.gain.setTargetAtTime(0.3, this.ctx.currentTime, 0.5);
+      this.delayFeedback.gain.setTargetAtTime(CONFIG.audio.delayFeedback || 0.5, this.ctx.currentTime, 0.5);
+      this.dryGain.gain.setTargetAtTime(0.7, this.ctx.currentTime, 0.5);
+    }
+  }
+
+  /**
    * Resume audio context (required after user interaction)
    */
   async resume() {
@@ -231,53 +249,7 @@ export class Synth {
     }
   }
 
-  /**
-   * Play bass drop effect (on mouse click)
-   */
-  playBassDrop() {
-    this.resume();
 
-    const now = this.ctx.currentTime;
-    
-    // Main bass oscillator
-    const osc = this.ctx.createOscillator();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(100, now);
-    osc.frequency.exponentialRampToValueAtTime(30, now + 1.0);
-
-    // Sub bass for extra punch
-    const subOsc = this.ctx.createOscillator();
-    subOsc.type = 'sine';
-    subOsc.frequency.setValueAtTime(60, now);
-    subOsc.frequency.exponentialRampToValueAtTime(20, now + 0.8);
-
-    // Envelopes
-    const env = this.ctx.createGain();
-    env.gain.setValueAtTime(0.6, now);
-    env.gain.linearRampToValueAtTime(0, now + 1.0);
-
-    const subEnv = this.ctx.createGain();
-    subEnv.gain.setValueAtTime(0.4, now);
-    subEnv.gain.linearRampToValueAtTime(0, now + 0.8);
-
-    // Distortion for grit
-    const distortion = this.ctx.createWaveShaper();
-    distortion.curve = this._makeDistortionCurve(50);
-
-    // Connect
-    osc.connect(env);
-    env.connect(distortion);
-    distortion.connect(this.masterGain);
-    
-    subOsc.connect(subEnv);
-    subEnv.connect(this.masterGain);
-
-    // Play
-    osc.start(now);
-    osc.stop(now + 1.1);
-    subOsc.start(now);
-    subOsc.stop(now + 0.9);
-  }
 
   /**
    * Create distortion curve

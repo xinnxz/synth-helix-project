@@ -36,9 +36,10 @@ class SynthHelix {
     
     this.time = 0;
     this.lastTime = 0;
+    this.time = 0;
+    this.lastTime = 0;
     this.isMouseDown = false;
     this.lastHoveredIndex = -1;
-    this.bassActiveTime = 0;
     this.shiftPressed = false; // Space-time warp trigger
     
     // Theme Configuration
@@ -206,16 +207,12 @@ class SynthHelix {
     this.lastTime = now;
     this.time += CONFIG.ui.animationSpeed;
     
-    // Bass Drop timing
-    const isBassActive = this.bassActiveTime > 0;
-    if (this.bassActiveTime > 0) this.bassActiveTime -= deltaTime;
-    
     // Audio FFT Analysis level (creates reactivity)
     const audioLevel = this.visualizer ? this.visualizer.getLevel() : 0;
     
     // --- 1. Sub-Systems Updates Phase ---
-    this.beams.update(this.time, isBassActive);
-    this.floor.update(this.time, isBassActive ? 2 : 1);
+    this.beams.update(this.time, false);
+    this.floor.update(this.time, 1);
     this.particles.update(deltaTime);
     if(this.background) this.background.update(this.time, audioLevel);
     
@@ -335,15 +332,10 @@ class SynthHelix {
   }
 
   /**
-   * Handle mouse down (bass drop)
+   * Handle mouse down
    */
   _onMouseDown(event) {
     this.isMouseDown = true;
-    this.triggerBassVisuals();
-    
-    if (this.synth && this.isInitialized) {
-      this.synth.playBassDrop();
-    }
   }
 
   /**
@@ -351,27 +343,6 @@ class SynthHelix {
    */
   _onMouseUp() {
     this.isMouseDown = false;
-  }
-
-  /**
-   * Trigger bass drop visuals
-   */
-  triggerBassVisuals() {
-    this.bassActiveTime = 0.5; // Active for 0.5 seconds
-    
-    // Emit ring particles at center
-    if (this.particles) {
-      this.particles.emitRing(
-        new THREE.Vector3(0, 0, 0),
-        this.currentTheme.secondary
-      );
-    }
-    
-    // Screen shake effect
-    if (this.postEffects) {
-      this.postEffects.shake(0.5, 0.3);
-      this.postEffects.flashBloom();
-    }
   }
 
   /**

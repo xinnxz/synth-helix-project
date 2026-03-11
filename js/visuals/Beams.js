@@ -77,31 +77,29 @@ export class Beams {
   /**
    * Update all beams (called every frame)
    * @param {number} time - Current time
-   * @param {boolean} isBassActive - Whether bass drop is active
    */
-  update(time, isBassActive = false) {
+  update(time) {
     this.meshes.forEach((mesh, i) => {
       const userData = mesh.userData;
 
-      if (isBassActive) {
-        // Earthquake mode - shake all beams
-        mesh.scale.y = 1 + Math.random() * 0.5;
-        mesh.material.color.setHex(this.theme.secondary);
-        mesh.position.y = Math.sin(time * 20 + i) * 2;
-      } else {
-        // Smooth return to normal
-        mesh.scale.x = THREE.MathUtils.lerp(mesh.scale.x, 1, 0.1);
-        mesh.scale.y = THREE.MathUtils.lerp(mesh.scale.y, 1, 0.1);
-        mesh.scale.z = THREE.MathUtils.lerp(mesh.scale.z, 1, 0.1);
-        mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, 0, 0.1);
+      // Smooth return to normal scale
+      mesh.scale.x = THREE.MathUtils.lerp(mesh.scale.x, 1, 0.1);
+      mesh.scale.y = THREE.MathUtils.lerp(mesh.scale.y, 1, 0.1);
+      mesh.scale.z = THREE.MathUtils.lerp(mesh.scale.z, 1, 0.1);
+      mesh.position.y = THREE.MathUtils.lerp(mesh.position.y, 0, 0.1);
 
-        // Rainbow color based on hue
-        const targetColor = new THREE.Color().setHSL(userData.hue, 1, 0.5);
-        mesh.material.color.lerp(targetColor, 0.05);
-      }
+      // Rainbow color based on hue
+      const targetColor = new THREE.Color().setHSL(userData.hue, 1, 0.5);
+      mesh.material.color.lerp(targetColor, 0.05);
 
-      // Subtle idle animation
-      mesh.rotation.y = Math.sin(time + i * 0.2) * 0.1;
+      // The Elegant Rotation: Rotate around the center axis (0,0) softly
+      const rotationSpeed = 0.2; // Radian per second
+      const currentAngle = userData.angle + (time * rotationSpeed);
+      mesh.position.x = Math.cos(currentAngle) * CONFIG.visual.beamRadius;
+      mesh.position.z = Math.sin(currentAngle) * CONFIG.visual.beamRadius;
+
+      // Subtle idle animation (breathing up & down lightly)
+      mesh.position.y += Math.sin(time * 2 + i) * 0.05;
     });
   }
 

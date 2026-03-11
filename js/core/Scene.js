@@ -83,15 +83,20 @@ export class SceneManager {
   }
 
   /**
-   * Update camera position (drift effect)
+   * Update camera position (subtle drift breathing effect)
    * @param {number} time - Current time
    */
   updateCamera(time) {
     if (!CONFIG.visual.cameraDrift) return;
 
-    const speed = CONFIG.visual.cameraDriftSpeed;
-    this.camera.position.x = Math.sin(time * speed) * 20;
-    this.camera.position.z = Math.cos(time * speed) * 40;
+    const speed = CONFIG.visual.cameraDriftSpeed * 0.5; // Perlambat lebih jauh
+    
+    // Gunakan posisi base (0, 10, 35) ditambahkan osilasi mikro
+    // Jangan lakukan orbit penuh 360 derajat agar user tidak pusing
+    this.camera.position.x = Math.sin(time * speed) * 2.5; // Sway kiri-kanan halus max 2.5 unit
+    this.camera.position.y = 10 + Math.sin(time * speed * 0.8) * 1.5; // Breathing naik-turun halus (hover)
+    this.camera.position.z = 35 + Math.cos(time * speed * 0.5) * 1.0; // Zoom in-out sangat pelan max 1.0 unit
+    
     this.camera.lookAt(0, 5, 0);
   }
 

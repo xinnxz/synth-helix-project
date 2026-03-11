@@ -127,6 +127,45 @@ export class Particles {
   }
 
   /**
+   * Emit massive fireworks burst (Gamification Reward)
+   */
+  emitFireworks() {
+    const fireworkCount = 150; // Massively dense particles
+    
+    for (let i = 0; i < fireworkCount; i++) {
+      const particle = this._getParticle();
+      if (!particle) break;
+
+      // Start from high center
+      particle.position.set(0, 15, 0);
+
+      // Math for spherical random explosion
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos((Math.random() * 2) - 1);
+      const speed = 15 + Math.random() * 25;
+
+      particle.userData.velocity.set(
+        speed * Math.sin(phi) * Math.cos(theta),
+        speed * Math.cos(phi),
+        speed * Math.sin(phi) * Math.sin(theta)
+      );
+
+      // Random vibrant rainbow colors
+      const hue = Math.random();
+      particle.material.color.setHSL(hue, 1, 0.6);
+      particle.material.opacity = 1;
+      particle.scale.setScalar(1.0 + Math.random());
+
+      particle.userData.life = 0;
+      particle.userData.maxLife = 2 + Math.random() * 1.5;
+      particle.userData.active = true;
+      particle.visible = true;
+
+      this.activeParticles.push(particle);
+    }
+  }
+
+  /**
    * Update all active particles
    * @param {number} deltaTime - Time since last frame
    */
