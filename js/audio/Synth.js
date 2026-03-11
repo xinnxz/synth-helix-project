@@ -116,9 +116,9 @@ export class Synth {
   }
 
   /**
-   * Play a note based on beam index
+   * Play a note based on beam index with Spatial 3D Audio support
    * @param {number} beamIndex - Index of triggered beam (0 to beamCount-1)
-   * @param {Object} options - Additional options
+   * @param {Object} options - Additional options including 3D position
    */
   playNote(beamIndex, options = {}) {
     this.resume();
@@ -127,6 +127,7 @@ export class Synth {
       waveform = this.currentWaveform,
       duration = 0.5,
       velocity = 1.0,
+      position = null    // THREE.Vector3 array or object [x,y,z]
     } = options;
 
     // Calculate frequency from beam index
@@ -156,9 +157,30 @@ export class Synth {
     // Release
     envelope.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
-    // Connect and play
-    osc.connect(envelope);
-    envelope.connect(this.masterGain);
+    // Connect Envelope to optional spatial Panner, else direct to master
+    let lastNode = envelope;
+
+    if (CONFIG.audio.spatialEnabled && position) {
+      const panner = this.ctx.createPanner();
+      panner.panningModel = 'HRTF'; // Best quality 3D Audio
+      panner.distanceModel = 'inverse';
+      panner.refDistance = CONFIG.audio.pannerRefDistance;
+      panner.maxDistance = CONFIG.audio.pannerMaxDistance;
+      panner.rolloffFactor = 1;
+      panner.coneInnerAngle = 360;
+      panner.coneOuterAngle = 0;
+      panner.coneOuterGain = 0;
+      
+      panner.positionX.value = position.x || 0;
+      panner.positionY.value = position.y || 0;
+      panner.positionZ.value = position.z || 0;
+      
+      envelope.connect(panner);
+      lastNode = panner;
+    }
+
+    // Connect to Master and Play
+    lastNode.connect(this.masterGain);
     
     osc.start(now);
     osc.stop(now + duration + 0.1);

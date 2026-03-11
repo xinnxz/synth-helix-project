@@ -18,188 +18,38 @@ export class Controls {
   }
 
   _createPanel() {
-    // Create panel container
-    this.panel = document.createElement('div');
-    this.panel.id = 'controls-panel';
-    this.panel.innerHTML = `
-      <div class="controls-header">
-        <h2>⚙️ SETTINGS</h2>
-        <button class="close-btn" id="close-controls">&times;</button>
-      </div>
-      
-      <!-- AUDIO SECTION -->
-      <div class="controls-section">
-        <h3>🎵 Audio</h3>
-        
-        <label>Volume</label>
-        <input type="range" id="ctrl-volume" min="0" max="100" value="30">
-        
-        <label>Scale</label>
-        <select id="ctrl-scale">
-          ${getScaleNames().map(s => 
-            `<option value="${s.id}" ${s.id === CONFIG.audio.defaultScale ? 'selected' : ''}>${s.name}</option>`
-          ).join('')}
-        </select>
-        
-        <label>Waveform</label>
-        <select id="ctrl-waveform">
-          <option value="sine">Sine (Smooth)</option>
-          <option value="triangle" selected>Triangle (Soft)</option>
-          <option value="sawtooth">Sawtooth (Bright)</option>
-          <option value="square">Square (Retro)</option>
-        </select>
-      </div>
-      
-      <!-- EFFECTS SECTION -->
-      <div class="controls-section">
-        <h3>🎛️ Effects</h3>
-        
-        <label>Delay Time</label>
-        <input type="range" id="ctrl-delay" min="0" max="100" value="30">
-        
-        <label>Reverb Mix</label>
-        <input type="range" id="ctrl-reverb" min="0" max="100" value="30">
-        
-        <label>Filter Cutoff</label>
-        <input type="range" id="ctrl-filter" min="0" max="100" value="100">
-        
-        <label>Filter Type</label>
-        <select id="ctrl-filter-type">
-          <option value="lowpass">Low Pass</option>
-          <option value="highpass">High Pass</option>
-          <option value="bandpass">Band Pass</option>
-        </select>
-        
-        <label>Distortion</label>
-        <input type="range" id="ctrl-distortion" min="0" max="100" value="0">
-        
-        <label>Chorus Mix</label>
-        <input type="range" id="ctrl-chorus" min="0" max="100" value="0">
-      </div>
-      
-      <!-- ARPEGGIATOR SECTION -->
-      <div class="controls-section">
-        <h3>🎼 Arpeggiator</h3>
-        
-        <button id="ctrl-arp-toggle" class="arp-btn">
-          <span class="arp-icon">▶</span> Start Arp
-        </button>
-        
-        <label>Pattern</label>
-        <select id="ctrl-arp-pattern">
-          <option value="up">Up ↑</option>
-          <option value="down">Down ↓</option>
-          <option value="updown">Up/Down ↕</option>
-          <option value="random">Random 🎲</option>
-          <option value="chord">Chord 🎹</option>
-        </select>
-        
-        <label>Tempo: <span id="arp-tempo-display">120</span> BPM</label>
-        <input type="range" id="ctrl-arp-tempo" min="60" max="200" value="120">
-        
-        <label>Chord Type</label>
-        <select id="ctrl-arp-chord">
-          <option value="major">Major</option>
-          <option value="minor">Minor</option>
-          <option value="major7">Major 7th</option>
-          <option value="minor7">Minor 7th</option>
-          <option value="sus4">Sus4</option>
-          <option value="power">Power</option>
-        </select>
-      </div>
-
-      <!-- VISUALIZER SECTION -->
-      <div class="controls-section visualizer-section">
-        <h3>📊 Visualizer</h3>
-        <div id="visualizer-container">
-          <canvas id="waveform-canvas" width="280" height="60"></canvas>
-          <canvas id="frequency-canvas" width="280" height="60"></canvas>
-        </div>
-      </div>
-
-      <!-- MIDI SECTION -->
-      <div class="controls-section">
-        <h3>🎹 MIDI</h3>
-        <button id="ctrl-midi-enable" class="midi-btn">
-          Enable MIDI
-        </button>
-        <div id="midi-status" class="midi-status">
-          Click to connect MIDI devices
-        </div>
-      </div>
-      
-      <!-- VISUAL SECTION -->
-      <div class="controls-section">
-        <h3>🎨 Visual</h3>
-        
-        <label>Theme</label>
-        <select id="ctrl-theme">
-          ${Object.entries(CONFIG.themes).map(([key, theme]) => 
-            `<option value="${key}" ${key === CONFIG.defaultTheme ? 'selected' : ''}>${theme.name}</option>`
-          ).join('')}
-        </select>
-        
-        <label>Beam Count</label>
-        <select id="ctrl-beams">
-          <option value="16">16 Beams</option>
-          <option value="32" selected>32 Beams</option>
-          <option value="48">48 Beams</option>
-          <option value="64">64 Beams</option>
-        </select>
-        
-        <label>Bloom Intensity</label>
-        <input type="range" id="ctrl-bloom" min="0" max="100" value="66">
-      </div>
-      
-      <!-- RECORDING SECTION -->
-      <div class="controls-section">
-        <h3>🎬 Recording</h3>
-        <button id="ctrl-record" class="record-btn">
-          <span class="record-icon">⏺</span> Start Recording
-        </button>
-      </div>
-      
-      <!-- SHORTCUTS SECTION -->
-      <div class="controls-section shortcuts">
-        <h3>⌨️ Shortcuts</h3>
-        <div class="shortcut"><span>F</span> Fullscreen</div>
-        <div class="shortcut"><span>S</span> Settings</div>
-        <div class="shortcut"><span>R</span> Record</div>
-        <div class="shortcut"><span>M</span> Mute</div>
-        <div class="shortcut"><span>A</span> Arpeggiator</div>
-        <div class="shortcut"><span>Space</span> Bass Drop</div>
-      </div>
-    `;
+    // Gunakan panel yang sudah ada di HTML5 (hindari innerHTML string panjang)
+    this.panel = document.getElementById('controls-panel');
     
-    document.body.appendChild(this.panel);
+    // Bind Event Listeners
     this._bindEvents();
   }
 
   _bindEvents() {
-    // Close button
-    document.getElementById('close-controls').addEventListener('click', () => {
+    // Set Header Settings Toggle
+    document.getElementById('settings-btn')?.addEventListener('click', () => {
+        this.toggle();
+    });
+
+    document.getElementById('close-settings')?.addEventListener('click', () => {
       this.hide();
     });
 
     // ============ AUDIO CONTROLS ============
     
-    // Volume
-    document.getElementById('ctrl-volume').addEventListener('input', (e) => {
-      this.app.synth?.setVolume(e.target.value / 100);
-    });
-
-    // Scale
-    document.getElementById('ctrl-scale').addEventListener('change', (e) => {
+    // Scale Modulation
+    document.getElementById('scale-select')?.addEventListener('change', (e) => {
       this.app.synth?.setScale(e.target.value);
-      // Update arpeggiator if active
-      if (this.app.arpeggiator) {
-        this.app.arpeggiator.setNotes(this.app.arpeggiator.notes);
-      }
     });
 
-    // Waveform
-    document.getElementById('ctrl-waveform').addEventListener('change', (e) => {
-      this.app.synth?.setWaveform(e.target.value);
+    // ============ VISUAL CONTROLS ============
+    
+    // Visual Warp Intensity (Blackhole Effect)
+    document.getElementById('warp-intensity')?.addEventListener('input', (e) => {
+        if(this.app.postEffects){
+            // Directly set uniform
+            this.app.postEffects.updateWarpIntensity(e.target.value / 100, 0.5); 
+        }
     });
 
     // ============ EFFECTS CONTROLS ============
@@ -310,12 +160,21 @@ export class Controls {
       this.app.sceneManager?.setBloomStrength(e.target.value / 33);
     });
 
-    // ============ RECORDING ============
+    // ============ RECORDING / LOOPER ============
 
-    // Recording
-    const recordBtn = document.getElementById('ctrl-record');
-    recordBtn.addEventListener('click', () => {
-      this.toggleRecording(recordBtn);
+    const recordBtn = document.getElementById('record-btn');
+    const clearLoopBtn = document.getElementById('clear-loop-btn');
+    
+    recordBtn?.addEventListener('click', () => {
+      if(this.app.looper) {
+          this.app.looper.toggleRecording();
+      }
+    });
+    
+    clearLoopBtn?.addEventListener('click', () => {
+      if(this.app.looper) {
+          this.app.looper.clearLoop();
+      }
     });
   }
 

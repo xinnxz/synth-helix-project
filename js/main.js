@@ -1,10 +1,13 @@
 /**
- * SYNTH::HELIX - Main Application
- * =================================
- * Entry point and main game loop
+ * SYNTH::HELIX - Neural Audio-Visual Engine Core
+ * =================================================
+ * Main application entry point orchestrating 3D environments, 
+ * VR sessions, Audio synthesis, and UI Interactions.
+ * @module Main
  */
 
 import * as THREE from 'three';
+import { VRButton } from 'three/addons/webxr/VRButton.js';
 import { CONFIG } from './config.js';
 import { SceneManager } from './core/Scene.js';
 import { Beams } from './visuals/Beams.js';
@@ -18,65 +21,89 @@ import { AudioVisualizer } from './audio/Visualizer.js';
 import { MIDIController } from './audio/MIDI.js';
 import { Arpeggiator } from './audio/Arpeggiator.js';
 import { Controls } from './ui/Controls.js';
+import { Looper } from './core/Looper.js';
 
+/**
+ * Main Class controlling the entire SYNTH::HELIX lifecycle
+ * @class SynthHelix
+ */
 class SynthHelix {
   constructor() {
-    // State
+    /** @type {boolean} Flag indicating if engine is ready */
     this.isInitialized = false;
+    /** @type {boolean} Flag indicating if animation loop is active */
     this.isPlaying = false;
+    
     this.time = 0;
     this.lastTime = 0;
     this.isMouseDown = false;
     this.lastHoveredIndex = -1;
     this.bassActiveTime = 0;
+    this.shiftPressed = false; // Space-time warp trigger
     
-    // Get current theme
+    // Theme Configuration
     this.currentTheme = CONFIG.themes[CONFIG.defaultTheme];
     
-    // Mouse & Raycaster
+    // Core Iteraction logic
     this.mouse = new THREE.Vector2();
     this.raycaster = new THREE.Raycaster();
     
-    // Modules (initialized on start)
+    // Module Declarations
     this.sceneManager = null;
     this.beams = null;
     this.floor = null;
     this.particles = null;
     this.background = null;
     this.postEffects = null;
+    
+    // Audio Systems
     this.synth = null;
     this.effects = null;
     this.visualizer = null;
     this.midiController = null;
     this.arpeggiator = null;
+    this.looper = null;
+    
+    // UI Systems
     this.controls = null;
     
-    // DOM Elements
+    // DOM Elements Bindings (Matching new HTML5 semantics)
     this.container = document.getElementById('canvas-container');
+    this.bootScreen = document.getElementById('boot-screen');
     this.startBtn = document.getElementById('start-btn');
-    this.overlayText = document.getElementById('overlay-text');
+    this.mainHud = document.getElementById('main-hud');
+    this.looperHud = document.getElementById('looper-hud');
+    this.interactionHint = document.getElementById('interaction-hint');
+    this.vrBtnContainer = document.getElementById('vr-btn');
     
-    // Bind events
     this._bindEvents();
   }
 
+  /**
+   * Bind DOM Level Event Listeners
+   * @private
+   */
   _bindEvents() {
-    // Start button
-    this.startBtn.addEventListener('click', () => this.start());
+    // Engine Boot Sequence
+    this.startBtn?.addEventListener('click', () => this.start());
     
-    // Mouse events
+    // Input mechanisms
     document.addEventListener('mousemove', (e) => this._onMouseMove(e));
     document.addEventListener('mousedown', () => this._onMouseDown());
     document.addEventListener('mouseup', () => this._onMouseUp());
+    document.addEventListener('keydown', (e) => { if(e.key === 'Shift') this.shiftPressed = true; });
+    document.addEventListener('keyup', (e) => { if(e.key === 'Shift') this.shiftPressed = false; });
     
-    // Touch events for mobile
-    document.addEventListener('touchmove', (e) => this._onTouchMove(e));
-    document.addEventListener('touchstart', (e) => this._onTouchStart(e));
+    // Mobile Touch interfaces
+    document.addEventListener('touchmove', (e) => this._onTouchMove(e), { passive: false });
+    document.addEventListener('touchstart', (e) => this._onTouchStart(e), { passive: false });
     document.addEventListener('touchend', () => this._onMouseUp());
   }
 
   /**
-   * Initialize and start the application
+   * Boot up the 3D Engine, Audio Context, and start the animation loop.
+   * This function implies the user has interacted with the document (required for WebAudio).
+   * @public
    */
   start() {
     if (this.isInitialized) return;
@@ -116,27 +143,45 @@ class SynthHelix {
       this.visualizer.start();
     }, 100);
     
-    // Initialize UI
+    // Initialize UI & Core Modules
     this.controls = new Controls(this);
+    this.looper = new Looper(this);
     
-    // Update UI
-    this.startBtn.style.display = 'none';
-    this.overlayText.classList.remove('hidden');
+    // Setup WebXR if supported/configured
+    if (CONFIG.vr.enabled && this.sceneManager.renderer.xr) {
+        this.sceneManager.renderer.xr.enabled = true;
+        const vrButtonElement = VRButton.createButton(this.sceneManager.renderer);
+        // Style and inject VR button into our custom UI container
+        vrButtonElement.style.position = 'relative';
+        vrButtonElement.style.border = 'none';
+        vrButtonElement.style.borderRadius = 'var(--border-radius)';
+        this.vrBtnContainer?.appendChild(vrButtonElement);
+        this.vrBtnContainer?.classList.remove('hidden');
+    }
+
+    // UI Orchestration Fade Out/In
+    if(this.bootScreen) this.bootScreen.classList.remove('active');
+    setTimeout(() => {
+        if(this.bootScreen) this.bootScreen.style.display = 'none';
+        if(this.mainHud) this.mainHud.classList.remove('hidden');
+        if(this.interactionHint) this.interactionHint.classList.remove('hidden');
+        if(this.looperHud) this.looperHud.classList.remove('hidden');
+    }, 500);
     
     this.isInitialized = true;
     this.isPlaying = true;
     
-    // Start animation loop
-    this._animate();
+    // Start animation loop using WebXR compatible renderer animation loop instead of generic requestAnimationFrame
+    this.sceneManager.renderer.setAnimationLoop(() => this._animate());
   }
 
   /**
-   * Main animation loop
+   * Main Engine Frame Loop (Tick)
+   * Process physics, WebGL renders, raycasting updates.
+   * @private
    */
   _animate() {
     if (!this.isPlaying) return;
-    
-    requestAnimationFrame(() => this._animate());
     
     // Calculate delta time
     const now = performance.now() / 1000;
@@ -144,35 +189,45 @@ class SynthHelix {
     this.lastTime = now;
     this.time += CONFIG.ui.animationSpeed;
     
-    // Check if bass is active
+    // Bass Drop timing
     const isBassActive = this.bassActiveTime > 0;
-    if (this.bassActiveTime > 0) {
-      this.bassActiveTime -= deltaTime;
-    }
+    if (this.bassActiveTime > 0) this.bassActiveTime -= deltaTime;
     
-    // Get audio level for reactive visuals
+    // Audio FFT Analysis level (creates reactivity)
     const audioLevel = this.visualizer ? this.visualizer.getLevel() : 0;
     
-    // Update all visual modules
+    // --- 1. Sub-Systems Updates Phase ---
     this.beams.update(this.time, isBassActive);
     this.floor.update(this.time, isBassActive ? 2 : 1);
     this.particles.update(deltaTime);
-    this.background?.update(this.time, audioLevel);
+    if(this.background) this.background.update(this.time, audioLevel);
+    
+    // Update Hologram Looper Logic
+    if(this.looper) this.looper.update(this.time);
+    
+    // Update camera (drift or WebXR tracking)
     this.sceneManager.updateCamera(this.time);
     
-    // Update post effects
+    // --- 2. Post-Processing Phase (Blackhole Warp & Bloom) ---
     if (this.postEffects) {
       this.postEffects.updateOriginalPosition();
       this.postEffects.setAudioReactiveBloom(audioLevel);
+      
+      // Update Space Warp based on shift press or audio level extreme limits
+      const warpTarget = this.shiftPressed ? 1.0 : (audioLevel > 0.8 ? audioLevel - 0.5 : 0.0);
+      this.postEffects.updateWarpIntensity(warpTarget, deltaTime);
+      
       this.postEffects.update(deltaTime);
     }
     
-    // Render
+    // --- 3. Render Phase ---
     this.sceneManager.render();
   }
 
   /**
-   * Handle mouse movement
+   * Updates 2D mouse projection to Normalized Device Coordinates
+   * @param {MouseEvent} event 
+   * @private
    */
   _onMouseMove(event) {
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -231,10 +286,17 @@ class SynthHelix {
 
   /**
    * Trigger a beam (visual + audio)
+   * @param {THREE.Mesh} mesh
+   * @private
    */
   _triggerBeam(mesh) {
     // Visual
     const beamIndex = this.beams.trigger(mesh);
+    
+    // Record to Memory if Looper is active
+    if (this.looper) {
+        this.looper.recordEvent(beamIndex);
+    }
     
     // Particles
     this.particles.emit(
@@ -243,9 +305,11 @@ class SynthHelix {
       this.currentTheme.primary
     );
     
-    // Audio
+    // Audio (With 3D Spatial Location provided)
     if (this.synth) {
-      this.synth.playNote(beamIndex);
+      this.synth.playNote(beamIndex, {
+          position: mesh.position.clone()
+      });
     }
   }
 

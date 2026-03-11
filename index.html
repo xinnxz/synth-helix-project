@@ -1,84 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     
-    <!-- SEO Meta Tags -->
-    <title>SYNTH::HELIX | Interactive Light Beam Music Instrument</title>
-    <meta name="description" content="SYNTH::HELIX is an immersive 3D light beam synthesizer. Create music by sweeping through neon beams in a cyberpunk environment. Professional audio with customizable scales, effects, and themes." />
-    <meta name="keywords" content="synth helix, synthesizer, music instrument, 3D music, light beam, cyberpunk, interactive music, web audio, three.js" />
-    <meta name="author" content="SYNTH::HELIX" />
+    <!-- SEO & Metadata Semantic -->
+    <title>SYNTH::HELIX | The Masterpiece Light Synthesizer</title>
+    <meta name="description" content="An immersive 3D light beam synthesizer featuring True Spatial Audio, WebXR (Virtual Reality), Blackhole Visuals, and Hologram Loop Station." />
+    <meta name="keywords" content="synth helix, synthesizer, VR music, WebXR, Web Audio API, Three.js, spatial audio, hologram loop" />
+    <meta name="author" content="Luthfi" />
     
     <!-- Open Graph / Social Media -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="SYNTH::HELIX | Interactive Light Beam Music Instrument" />
-    <meta property="og:description" content="Create music by sweeping through neon light beams in an immersive 3D cyberpunk environment." />
-    <meta property="og:image" content="/assets/og-image.jpg" />
+    <meta property="og:title" content="SYNTH::HELIX | Masterpiece 3D Synthesizer" />
+    <meta property="og:description" content="Experience the future of digital instruments. Create music by sweeping through neon strings in a cyberpunk cosmos." />
+    <!-- Image placeholder, usually you put real URL here -->
+    <meta property="og:image" content="https://raw.githubusercontent.com/luthfidev/synth-helix-project/main/assets/og-image.jpg" />
     
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="SYNTH::HELIX" />
-    <meta name="twitter:description" content="Interactive 3D Light Beam Music Instrument" />
+    <meta name="twitter:title" content="SYNTH::HELIX Interactive" />
+    <meta name="twitter:description" content="VR Ready 3D Light Beam Music Instrument" />
     
-    <!-- Favicon -->
+    <!-- Favicon Emoji (Modern Pattern) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎹</text></svg>" />
     
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Orbitron (Futuristic) & Rajdhani (Tech HUD) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet" />
     
-    <!-- Styles -->
+    <!-- Core Styles -->
     <link rel="stylesheet" href="css/styles.css" />
-  </head>
-  
-  <body>
-    <!-- 3D Canvas Container -->
-    <div id="canvas-container"></div>
+</head>
 
-    <!-- UI Overlay -->
-    <div id="ui">
-      <button id="start-btn" class="glow-pulse">INITIALIZE SYSTEM</button>
-      <div id="overlay-text" class="hidden">
-        SWEEP MOUSE TO PLAY // CLICK & HOLD FOR BASS // PRESS [S] FOR SETTINGS
-      </div>
-    </div>
+<body>
+    <!-- 3D Canvas Background -->
+    <main id="canvas-container"></main>
 
-    <!-- Branding -->
-    <div id="branding" class="hidden">
-      <h1>SYNTH::HELIX</h1>
-      <div class="tagline">LIGHT BEAM SYNTHESIZER</div>
-    </div>
+    <!-- UI Overlay Layer -->
+    <div id="ui-layer">
+        
+        <!-- INITIAL BOOT SCREEN -->
+        <div id="boot-screen" class="glass-panel active">
+            <h1 class="glitch-text" data-text="SYNTH::HELIX">SYNTH::HELIX</h1>
+            <p class="subtitle">NEURAL AUDIO-VISUAL ENGINE v2.0</p>
+            
+            <div class="boot-features">
+                <span>✓ SPATIAL AUDIO</span>
+                <span>✓ WEBXR READY</span>
+                <span>✓ MIDI SUPPORT</span>
+                <span>✓ HOLOGRAM ENGINE</span>
+            </div>
+            
+            <button id="start-btn" class="cyber-btn primary-glow">
+                <span class="btn-text">INITIALIZE SYSTEM</span>
+                <span class="btn-glitch"></span>
+            </button>
+            <p class="hint-text">*Headphones Recommended for 3D Audio</p>
+        </div>
 
-    <!-- Settings Button -->
-    <button id="settings-btn" class="hidden" title="Settings (S)">⚙</button>
+        <!-- MAIN HUD (Heads Up Display) -->
+        <header id="main-hud" class="hidden">
+            <div class="hud-left">
+                <h2>SYNTH::HELIX</h2>
+                <div class="status-indicators">
+                    <span class="indicator" id="status-audio">AUDIO: <span class="active-pulse">ON</span></span>
+                    <span class="indicator" id="status-midi">MIDI: <span>OFF</span></span>
+                </div>
+            </div>
+            
+            <div class="hud-right">
+                <button id="vr-btn" class="cyber-btn sm hidden" title="Enter Virtual Reality">
+                    👓 VR MODE
+                </button>
+                <button id="settings-btn" class="cyber-btn sm" title="Settings (Press S)">
+                    ⚙ SETTINGS
+                </button>
+            </div>
+        </header>
 
-    <!-- Module Scripts -->
+        <!-- HOLOGRAM LOOP STATION CONTROLS -->
+        <div id="looper-hud" class="hidden">
+            <button id="record-btn" class="looper-btn">
+                <span class="rec-dot"></span> RECORD LOOP
+            </button>
+            <button id="clear-loop-btn" class="looper-btn hidden">
+                ⏏ CLEAR
+            </button>
+        </div>
+
+        <!-- INTERACTION HINT -->
+        <div id="interaction-hint" class="hidden">
+            [ SWEEP MOUSE ] TO PLAY // [ HOLD ] FOR BASS // [ SHIFT ] WARP SPACE
+        </div>
+
+        <!-- SETTINGS PANEL -->
+        <aside id="controls-panel" class="glass-panel hidden">
+            <div class="panel-header">
+                <h3>SYSTEM PARAMETERS</h3>
+                <button id="close-settings" class="close-btn">×</button>
+            </div>
+            
+            <div class="panel-body">
+                <!-- Parameters will be injected here by JS later, keeping HTML clean -->
+                <div class="control-group">
+                    <label>SCALE MODULATION</label>
+                    <select id="scale-select" class="cyber-select">
+                        <option value="pentatonic">CYBER-PENTATONIC</option>
+                        <option value="minor">NEON-MINOR</option>
+                        <option value="enigmatic">ENIGMATIC-VOID</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>VISUAL WARP (BLACKHOLE)</label>
+                    <input type="range" id="warp-intensity" min="0" max="100" value="0" class="cyber-range">
+                </div>
+            </div>
+        </aside>
+
+    </div> <!-- End UI Layer -->
+
+    <!-- Module Scripts (ES Import Map) -->
     <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
     <script type="importmap">
-      {
-        "imports": {
-          "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
-          "three/addons/": "https://unpkg.com/three@0.154.0/examples/jsm/"
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.154.0/examples/jsm/"
+            }
         }
-      }
     </script>
 
-    <!-- Main Application -->
+    <!-- Main Application Entry Point -->
     <script type="module" src="js/main.js"></script>
-    
-    <!-- Show branding & settings after load -->
-    <script>
-      document.getElementById('start-btn').addEventListener('click', () => {
-        document.getElementById('branding').classList.remove('hidden');
-        document.getElementById('settings-btn').classList.remove('hidden');
-      });
-      
-      document.getElementById('settings-btn').addEventListener('click', () => {
-        const panel = document.getElementById('controls-panel');
-        if (panel) panel.classList.toggle('visible');
-      });
-    </script>
-  </body>
+</body>
 </html>
