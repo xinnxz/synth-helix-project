@@ -179,6 +179,9 @@ export class Synth {
       lastNode = panner;
     }
 
+    // Connect oscillator → envelope → (panner?) → master
+    osc.connect(envelope);
+
     // Connect to Master and Play
     lastNode.connect(this.masterGain);
     
@@ -189,34 +192,42 @@ export class Synth {
   }
 
   /**
-   * Update the spatial listener's position to match the camera
+   * Update the spatial listener's position to match the camera.
+   * NOTE: We avoid importing THREE here to keep audio module independent.
+   * Instead we extract direction from camera's matrixWorld directly.
    * @param {THREE.Camera} camera 
    */
   updateListener(camera) {
     if (!CONFIG.audio.spatialEnabled || !this.ctx.listener) return;
 
-    // Set position
-    if (this.ctx.listener.positionX) {
-      // Modern Web Audio API
-      this.ctx.listener.positionX.setTargetAtTime(camera.position.x, this.ctx.currentTime, 0.05);
-      this.ctx.listener.positionY.setTargetAtTime(camera.position.y, this.ctx.currentTime, 0.05);
-      this.ctx.listener.positionZ.setTargetAtTime(camera.position.z, this.ctx.currentTime, 0.05);
-      
-      // We also need to get camera direction for orientation
-      const dir = new THREE.Vector3();
-      camera.getWorldDirection(dir);
-      const up = camera.up;
-      
-      this.ctx.listener.forwardX.setTargetAtTime(dir.x, this.ctx.currentTime, 0.05);
-      this.ctx.listener.forwardY.setTargetAtTime(dir.y, this.ctx.currentTime, 0.05);
-      this.ctx.listener.forwardZ.setTargetAtTime(dir.z, this.ctx.currentTime, 0.05);
-      
-      this.ctx.listener.upX.setTargetAtTime(up.x, this.ctx.currentTime, 0.05);
-      this.ctx.listener.upY.setTargetAtTime(up.y, this.ctx.currentTime, 0.05);
-      this.ctx.listener.upZ.setTargetAtTime(up.z, this.ctx.currentTime, 0.05);
-    } else {
-      // Fallback for older browsers
-      this.ctx.listener.setPosition(camera.position.x, camera.position.y, camera.position.z);
+    try {
+      // Set listener position from camera
+      if (this.ctx.listener.positionX) {
+        // Modern Web Audio API (AudioParam-based)
+        this.ctx.listener.positionX.setTargetAtTime(camera.position.x, this.ctx.currentTime, 0.05);
+        this.ctx.listener.positionY.setTargetAtTime(camera.position.y, this.ctx.currentTime, 0.05);
+        this.ctx.listener.positionZ.setTargetAtTime(camera.position.z, this.ctx.currentTime, 0.05);
+        
+        // Extract forward direction from camera's world matrix (column 3, negated Z)
+        // This avoids needing to import THREE just for a Vector3
+        const m = camera.matrixWorld.elements;
+        const fx = -m[8], fy = -m[9], fz = -m[10]; // Forward = -Z axis
+        const ux = m[4], uy = m[5], uz = m[6];      // Up = Y axis
+        
+        this.ctx.listener.forwardX.setTargetAtTime(fx, this.ctx.currentTime, 0.05);
+        this.ctx.listener.forwardY.setTargetAtTime(fy, this.ctx.currentTime, 0.05);
+        this.ctx.listener.forwardZ.setTargetAtTime(fz, this.ctx.currentTime, 0.05);
+        
+        this.ctx.listener.upX.setTargetAtTime(ux, this.ctx.currentTime, 0.05);
+        this.ctx.listener.upY.setTargetAtTime(uy, this.ctx.currentTime, 0.05);
+        this.ctx.listener.upZ.setTargetAtTime(uz, this.ctx.currentTime, 0.05);
+      } else {
+        // Fallback for older browsers
+        this.ctx.listener.setPosition(camera.position.x, camera.position.y, camera.position.z);
+      }
+    } catch (e) {
+      // Silently fail - audio should never crash the render loop
+      console.warn('Synth::updateListener error:', e.message);
     }
   }
 
