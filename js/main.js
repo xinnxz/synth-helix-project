@@ -87,6 +87,21 @@ class SynthHelix {
     // Engine Boot Sequence
     this.startBtn?.addEventListener('click', () => this.start());
     
+    // UI Event Blocker (Memastikan klik panel UI tidak bocor ke Canvas 3D)
+    const uiLayer = document.getElementById('ui-layer');
+    if (uiLayer) {
+        const stopProp = (e) => {
+            // Hanya hentikan jika klik benar-benar ditargetkan pada elemen UI aktif (bukan area kosong)
+            if (e.target.closest('.cyber-btn, .close-btn, .panel-body, .panel-header, .looper-btn, select, input, #boot-screen')) {
+                e.stopPropagation();
+            }
+        };
+        uiLayer.addEventListener('mousedown', stopProp);
+        uiLayer.addEventListener('mousemove', stopProp);
+        uiLayer.addEventListener('touchstart', stopProp, { passive: false });
+        uiLayer.addEventListener('touchmove', stopProp, { passive: false });
+    }
+    
     // Input mechanisms
     document.addEventListener('mousemove', (e) => this._onMouseMove(e));
     document.addEventListener('mousedown', (e) => this._onMouseDown(e));
@@ -209,6 +224,10 @@ class SynthHelix {
     
     // Update camera (drift or WebXR tracking)
     this.sceneManager.updateCamera(this.time);
+    const mainCamera = this.sceneManager.getCamera();
+    
+    // Sync Audio Listener to Camera for True 3D Audio
+    if (this.synth) this.synth.updateListener(mainCamera);
     
     // --- 2. Post-Processing Phase (Blackhole Warp & Bloom) ---
     if (this.postEffects) {
@@ -232,14 +251,6 @@ class SynthHelix {
    * @private
    */
   _onMouseMove(event) {
-    // Ignore hovering over UI elements
-    if (event && event.target) {
-        if (event.target.closest('#main-hud, #controls-panel, #start-btn, #interaction-hint, #looper-hud, #boot-screen')) {
-            this.lastHoveredIndex = -1; // Reset hover
-            return;
-        }
-    }
-    
     this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
     
@@ -253,12 +264,6 @@ class SynthHelix {
     if (event.touches.length === 0) return;
     const touch = event.touches[0];
     
-    // Ignore touch on UI
-    if (touch.target && touch.target.closest('#main-hud, #controls-panel, #start-btn, #interaction-hint, #looper-hud')) {
-        this.lastHoveredIndex = -1;
-        return;
-    }
-    
     this.mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
     
@@ -271,11 +276,6 @@ class SynthHelix {
   _onTouchStart(event) {
     if (event.touches.length === 0) return;
     const touch = event.touches[0];
-    
-    // Ignore touch on UI
-    if (touch.target && touch.target.closest('#main-hud, #controls-panel, #start-btn, #interaction-hint, #looper-hud')) {
-        return;
-    }
     
     this.mouse.x = (touch.clientX / window.innerWidth) * 2 - 1;
     this.mouse.y = -(touch.clientY / window.innerHeight) * 2 + 1;
@@ -338,13 +338,6 @@ class SynthHelix {
    * Handle mouse down (bass drop)
    */
   _onMouseDown(event) {
-    // Ignore clicks that target the UI overlay, so we don't accidentally "play music behind the settings"
-    if (event && event.target) {
-        if (event.target.closest('#main-hud, #controls-panel, #start-btn, #interaction-hint, #looper-hud, #boot-screen')) {
-            return;
-        }
-    }
-    
     this.isMouseDown = true;
     this.triggerBassVisuals();
     

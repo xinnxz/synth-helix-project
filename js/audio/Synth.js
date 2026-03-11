@@ -189,6 +189,38 @@ export class Synth {
   }
 
   /**
+   * Update the spatial listener's position to match the camera
+   * @param {THREE.Camera} camera 
+   */
+  updateListener(camera) {
+    if (!CONFIG.audio.spatialEnabled || !this.ctx.listener) return;
+
+    // Set position
+    if (this.ctx.listener.positionX) {
+      // Modern Web Audio API
+      this.ctx.listener.positionX.setTargetAtTime(camera.position.x, this.ctx.currentTime, 0.05);
+      this.ctx.listener.positionY.setTargetAtTime(camera.position.y, this.ctx.currentTime, 0.05);
+      this.ctx.listener.positionZ.setTargetAtTime(camera.position.z, this.ctx.currentTime, 0.05);
+      
+      // We also need to get camera direction for orientation
+      const dir = new THREE.Vector3();
+      camera.getWorldDirection(dir);
+      const up = camera.up;
+      
+      this.ctx.listener.forwardX.setTargetAtTime(dir.x, this.ctx.currentTime, 0.05);
+      this.ctx.listener.forwardY.setTargetAtTime(dir.y, this.ctx.currentTime, 0.05);
+      this.ctx.listener.forwardZ.setTargetAtTime(dir.z, this.ctx.currentTime, 0.05);
+      
+      this.ctx.listener.upX.setTargetAtTime(up.x, this.ctx.currentTime, 0.05);
+      this.ctx.listener.upY.setTargetAtTime(up.y, this.ctx.currentTime, 0.05);
+      this.ctx.listener.upZ.setTargetAtTime(up.z, this.ctx.currentTime, 0.05);
+    } else {
+      // Fallback for older browsers
+      this.ctx.listener.setPosition(camera.position.x, camera.position.y, camera.position.z);
+    }
+  }
+
+  /**
    * Play bass drop effect (on mouse click)
    */
   playBassDrop() {
