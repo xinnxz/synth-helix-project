@@ -42,6 +42,10 @@ class SynthHelix {
     this.lastHoveredIndex = -1;
     this.shiftPressed = false; // Space-time warp trigger
     
+    // Gamification & Features
+    this.hitCount = 0;
+    this.isZenMode = false;
+    
     // Theme Configuration
     this.currentTheme = CONFIG.themes[CONFIG.defaultTheme];
     
@@ -87,6 +91,11 @@ class SynthHelix {
   _bindEvents() {
     // Engine Boot Sequence
     this.startBtn?.addEventListener('click', () => this.start());
+    
+    // Zen Mode Toggle
+    document.getElementById('zen-btn')?.addEventListener('click', () => {
+        this.toggleZenMode();
+    });
     
     // UI Event Blocker (Memastikan klik panel UI tidak bocor ke Canvas 3D)
     const uiLayer = document.getElementById('ui-layer');
@@ -311,23 +320,67 @@ class SynthHelix {
     // Visual
     const beamIndex = this.beams.trigger(mesh);
     
+    // Check Hit Counter Gamification
+    this.hitCount++;
+    const hitEl = document.getElementById('hit-counter');
+    if (hitEl) {
+        hitEl.innerText = this.hitCount;
+        // Trigger reflow to restart CSS pulse animation
+        hitEl.classList.remove('active-pulse');
+        void hitEl.offsetWidth; 
+        hitEl.classList.add('active-pulse');
+    }
+    
+    // Fireworks Reward every 100 hits
+    if (this.hitCount % 100 === 0 && this.particles) {
+        this.particles.emitFireworks();
+    }
+    
     // Record to Memory if Looper is active
     if (this.looper) {
         this.looper.recordEvent(beamIndex);
     }
     
-    // Particles
+    // Particles (normal burst)
     this.particles.emit(
       mesh.position.clone(),
-      15,
+      this.isZenMode ? 5 : 15, // Less particles in zen mode
       this.currentTheme.primary
     );
     
     // Audio (With 3D Spatial Location provided)
     if (this.synth) {
       this.synth.playNote(beamIndex, {
-          position: mesh.position.clone()
+          position: mesh.position.clone(),
+          velocity: this.isZenMode ? 0.7 : 1.0 // Softer synth in zen mode
       });
+    }
+  }
+
+  /**
+   * Toggle Zen / Meditation Mode 🧘‍♂️
+   */
+  toggleZenMode() {
+    this.isZenMode = !this.isZenMode;
+    const zenBtn = document.getElementById('zen-btn');
+    const hud = document.getElementById('main-hud');
+    
+    if (this.isZenMode) {
+        if(zenBtn) {
+            zenBtn.classList.add('active');
+            zenBtn.innerHTML = '✨ ZEN ACTIVE';
+        }
+        this.setTheme('vaporwave'); // Chill purple/blue theme
+        if (this.synth) this.synth.setZenMode(true);
+        if (hud) hud.style.opacity = '0.6'; // Dim UI a bit
+    } else {
+        if(zenBtn) {
+            zenBtn.classList.remove('active');
+            zenBtn.innerHTML = '🧘 ZEN MODE';
+        }
+        this.setTheme(CONFIG.defaultTheme || 'cyberpunk');
+        if (this.synth) this.synth.setZenMode(false);
+        if (hud) hud.style.opacity = '1';
     }
   }
 
